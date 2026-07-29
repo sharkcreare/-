@@ -24,3 +24,7 @@ mybatis-plus:
 
 server:
   port: 8080
+# jwt配置
+jwt:
+  secret: your-256-bit-secret-key-here-make-it-longpleasewritealongstring
+  expiration: 86400000   # 24小时 毫秒，和原来 1000*60*60*24 一致

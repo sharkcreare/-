@@ -12,7 +12,7 @@ public enum ResultCode {
     FORBIDDEN(403, "无权限访问"),
     NOT_FOUND(404, "资源不存在"),
     INTERNAL_ERROR(500, "服务器内部错误"),
-
+    THREAD_NOT_FUND_ID(405,"线程找不到用户Id"),
     // 业务错误码
     USERNAME_EXISTS(1001, "用户名已存在"),
     USER_NOT_FOUND(1002, "用户不存在"),
