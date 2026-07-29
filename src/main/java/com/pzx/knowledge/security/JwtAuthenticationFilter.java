@@ -2,7 +2,6 @@ package com.pzx.knowledge.security;
 
 import com.pzx.knowledge.utils.JwtUtils;
 
-import com.pzx.knowledge.utils.UserContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,21 +25,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
             String token = getTokenFromRequest(request);
-            try {
-                if (StringUtils.hasText(token) && jwtUtils.validateToken(token)) {
-                    Long userId = jwtUtils.getUserId(token);
 
-                    UserContext.setUser(userId);
-
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-                chain.doFilter(request, response);
-            }finally {
-                UserContext.removeUser();
-                SecurityContextHolder.clearContext();
+            if (StringUtils.hasText(token)&&jwtUtils.validateToken(token)){
+                Long userId =jwtUtils.getUserId(token);
+                UsernamePasswordAuthenticationToken authentication=
+                        new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+        chain.doFilter(request, response);
     }
 
 
