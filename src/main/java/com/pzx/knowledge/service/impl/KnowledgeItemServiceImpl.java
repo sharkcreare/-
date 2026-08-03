@@ -8,22 +8,26 @@ import com.pzx.knowledge.common.result.ResultCode;
 import com.pzx.knowledge.dto.KnowledgeItemDTO;
 import com.pzx.knowledge.entity.ItemTag;
 import com.pzx.knowledge.entity.KnowledgeItem;
+import com.pzx.knowledge.entity.Tag;
 import com.pzx.knowledge.mapper.ItemTagMapper;
 import com.pzx.knowledge.mapper.KnowledgeItemMapper;
+import com.pzx.knowledge.mapper.TagMapper;
 import com.pzx.knowledge.service.KnowledgeItemService;
+
 import com.pzx.knowledge.utils.UserContext;
 import com.pzx.knowledge.vo.KnowledgeItemVO;
-import io.netty.util.internal.StringUtil;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
 
 
 @Service
@@ -31,7 +35,7 @@ import java.util.stream.Collectors;
 public class KnowledgeItemServiceImpl
         extends ServiceImpl<KnowledgeItemMapper, KnowledgeItem> implements KnowledgeItemService {
 
-
+    private final TagMapper tagMapper;
     private final ItemTagMapper itemTagMapper;
 
     @Override
@@ -71,13 +75,14 @@ public class KnowledgeItemServiceImpl
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         Long userId =UserContext.getUser();
         if (id==null){
             throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
         }
         KnowledgeItem item =this.getById(id);
-        if (item==null||!item.getId().equals(userId))
+        if (item==null||!item.getUserId().equals(userId))
         {
             throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
         }
@@ -125,6 +130,8 @@ public class KnowledgeItemServiceImpl
         Page<KnowledgeItem>result= this.page(page,wrapper);
         List<KnowledgeItemVO> voList=result.getRecords().stream()
                 .map(this::toVo).collect(Collectors.toList());
+
+        batchFillTags(voList);
         Page<KnowledgeItemVO> vopage =new Page<>(pageNum,pageSize);
         vopage.setTotal(result.getTotal());
         vopage.setRecords(voList);
@@ -142,18 +149,54 @@ public class KnowledgeItemServiceImpl
 
     }
 
+
+
+
     //私有方法：将数据转成VO
     private KnowledgeItemVO toVo (KnowledgeItem item){
 
         KnowledgeItemVO vo =new KnowledgeItemVO();
-        Long userId=UserContext.getUser();
-        vo.setUserid(userId);
         BeanUtils.copyProperties(item ,vo);
 
-        vo.setIsFavorite(item.getIsFavorite()==1);
+        vo.setIsFavorite(item.getIsFavorite() != null && item.getIsFavorite() == 1);
 
         vo.setIsTop(item.getIsTop() == 1);
 
      return vo;
+    }
+
+
+    private void batchFillTags (List<KnowledgeItemVO> voList){
+        if(voList.isEmpty()){
+            return;
+        }
+        List<Long> itemIds =voList.stream()
+                .map(KnowledgeItemVO::getId)
+                .toList();
+
+        List<ItemTag>allMappings =itemTagMapper.selectList(
+                new LambdaQueryWrapper<ItemTag>()
+                        .in(ItemTag::getItemId,itemIds)
+        );
+        List<Long> allTagIds =allMappings.stream()
+                .map(ItemTag::getTagId)
+                .distinct()
+                .toList();
+        if(allTagIds.isEmpty()){
+            voList.forEach(vo->vo.setTags(Collections.emptyList()));
+            return;
+        }
+
+        Map<Long,String>tagMap=tagMapper.selectList(
+                new LambdaQueryWrapper<Tag>().in(Tag::getId, allTagIds)
+        ).stream().collect(Collectors.toMap(Tag::getId,Tag::getName));
+
+        Map<Long,List<String>>grouped =allMappings.stream()
+                .collect(Collectors.groupingBy(ItemTag::getItemId,Collectors.mapping(
+                     m->tagMap.get(m.getTagId()),Collectors.toList())
+                ));
+
+        voList.forEach(vo-> vo.setTags(grouped.getOrDefault(vo.getId(),Collections.emptyList())));
+
     }
 }

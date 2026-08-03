@@ -40,8 +40,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         User user = new User();
+        // 先把明文密码存下来再拷贝，避免 BeanUtils 拷贝password后被删除encode行导致明文入库
+        String rawPassword =dto.getPassword();
+        dto.setPassword(null);
         BeanUtils.copyProperties(dto, user);
-        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setPassword(passwordEncoder.encode(rawPassword));
         this.save(user);
         return toVO(user);
     }
@@ -55,6 +58,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(Objects.isNull(user)){
             log.error("用户查询不到");
             throw new BusinessException(ResultCode.USER_NOT_FOUND);
+        }
+        if (Objects.equals(user.getStatus(), 0)) {
+            log.warn("login failed - user disabled: {}", dto.getUsername());
+            throw new BusinessException(ResultCode.USER_DISABLED);
         }
         if(!passwordEncoder.matches(dto.getPassword(), user.getPassword())){
             log.error("用户密码错误");

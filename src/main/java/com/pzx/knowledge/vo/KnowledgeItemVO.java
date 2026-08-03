@@ -6,7 +6,6 @@ import java.util.List;
 
 @Data
 public class KnowledgeItemVO {
-    private Long userid;
     private Long id;
     private String title;
     private String content;
@@ -16,7 +15,7 @@ public class KnowledgeItemVO {
     private Boolean isFavorite;
     private Boolean isTop;
     private Integer viewCount;
-    private List<String> tags;       // 标签名称列表
+    private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

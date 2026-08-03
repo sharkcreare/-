@@ -1,3 +1,8 @@
 spring:
   application:
     name: knowledge-system
+#    jwt:
+#      secret: 9sKdF28vRp7qLzBn5tGm3xYcUa6eJh0wQr4bTzN8dV
+#      expire: 86400000
+jwt:
+  secret: pzx-knowledge-system-2026-very-long-secret-key-256bits

@@ -1,10 +1,16 @@
 package com.pzx.knowledge.utils;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -13,52 +19,80 @@ import java.util.Date;
 @Slf4j
 @Component
 public class JwtUtils {
-    private static final String SECRET ="your-256-bit-secret-key-here-make-it-long";
-    private static final long  EXPIRATION =1000 * 60 * 60 * 24;
+
+        @Value("${jwt.secret}")
+        private String secret;
+
+        @Value("${jwt.expire:86400000}")
+        private long expiration;
+
+        private SecretKey getKey() {
+            return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        }
 
 
-    private SecretKey getKey(){
-        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
-    }
-
-//            生成jwp
+//            生成jwptoken
     public String generateToken (Long userId,String username){
 
         Date now =new Date();
-        Date expiration = new Date(now.getTime()+EXPIRATION);
+        Date expireTime = new Date(now.getTime()+ expiration);
         return Jwts.builder()
                 .subject(username)
                 .claim("userId",userId)
                 .issuedAt(now)
-                .expiration(expiration)
+                .expiration(expireTime)
                 .signWith(getKey())
                 .compact();
     }
 //              解析jwp
-    private Claims parseClaims(String token){
-        return  Jwts.parser()
-                .verifyWith(getKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-    public Long getUserId(String token){
-        return  parseClaims(token).get("userId",Long.class);
-    }
+    private Claims getClaims(String token){
 
-    public String getUsername (String token){
-        return  parseClaims(token).getSubject();
+            if(!StringUtils.hasText(token)){
+                log.warn("token为空");
+                return null;
+            }
+            try {
+                return Jwts.parser()
+                        .verifyWith(getKey())
+                        .build()
+                        .parseSignedClaims(token)
+                        .getPayload();
+            }
+            catch (ExpiredJwtException e) {
+                log.error("token已过期");
+            } catch (SignatureException e) {
+                log.error("token签名错误，已被篡改");
+            } catch (MalformedJwtException e) {
+                log.error("token格式错误");
+            } catch (Exception e) {
+                log.error("token解析异常:{}", e.getMessage());
+            }
+            return null;
+    }
+    /**
+     * 校验token是否有效
+     */
+    public boolean validateToken(String token) {
+        return getClaims(token) != null;
+    }
+    /**
+     * 根据token获取userId
+     */
+    public Long getUserId(String token) {
+        Claims claims = getClaims(token);
+        if (claims == null) {
+            return null;
+        }
+        return claims.get("userId",Long.class);
     }
 //
-// 验证 token 是否有效（是否过期、签名是否正确）
-    public  boolean validateToken(String token){
-        try {
-            parseClaims(token);
-            return true;
-        }catch (Exception e){
-            log.error("token无效，异常信息：{}",e.getMessage());
-            return false;
-        }
-    }
+// 获取用户名
 
+        public String getUsername(String token) {
+            Claims claims = getClaims(token);
+            if (claims == null) {
+                return null;
+            }
+            return claims.getSubject();
+        }
 }

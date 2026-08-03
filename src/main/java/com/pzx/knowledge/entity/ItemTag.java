@@ -1,10 +1,12 @@
 package com.pzx.knowledge.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("item_tag")
+@TableName("knowledge_item_tag")
 public class ItemTag {
     @TableId(type = IdType.AUTO)
     private Long id;

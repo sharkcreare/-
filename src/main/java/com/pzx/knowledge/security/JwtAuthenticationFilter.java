@@ -2,6 +2,7 @@ package com.pzx.knowledge.security;
 
 import com.pzx.knowledge.utils.JwtUtils;
 import com.pzx.knowledge.utils.UserContext;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authSetByThisFilter = true;
             }
             chain.doFilter(request, response);
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             // token异常：过期、篡改、解析失败，返回标准401 JSON
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");

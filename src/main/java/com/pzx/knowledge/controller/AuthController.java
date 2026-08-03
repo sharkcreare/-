@@ -12,11 +12,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 @Slf4j
 @RestController
@@ -29,27 +27,25 @@ public class AuthController {
     @Operation(summary = "用户注册")
     @PostMapping("/register")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO dto) {
-
         return Result.ok(userService.register(dto));
-
     }
+
+
     @Operation(summary = "用户登录")
     @PostMapping("/login")
     public Result<LoginResultVO> login(@Valid @RequestBody LoginDTO dto) {
-
         return Result.ok(userService.login(dto));
-
     }
 
 
     @GetMapping("/me")
     public Result<UserVO> me(){
-        Long userId =(Long) SecurityContextHolder
-                .getContext().getAuthentication().getPrincipal();
-        if (Objects.isNull(userId)){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if(auth==null || auth.getPrincipal()==null){
             log.error("从线程中无法找到用户ID");
-            throw  new BusinessException(ResultCode.THREAD_NOT_FUND_ID);
+            throw  new BusinessException(ResultCode.THREAD_NOT_FOUND_ID);
         }
+        Long userId =(Long)auth.getPrincipal();
         return Result.ok(userService.getCurrentUser(userId));
     }
 }
