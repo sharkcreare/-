@@ -4,11 +4,12 @@ import com.pzx.knowledge.common.exception.BusinessException;
 import com.pzx.knowledge.common.result.Result;
 import com.pzx.knowledge.common.result.ResultCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import javax.naming.AuthenticationException;
-import java.nio.file.AccessDeniedException;
+
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,4 +48,5 @@ public class GlobalExceptionHandler {
         log.warn("权限不足：{}", e.getMessage());
         return Result.fail(ResultCode.FORBIDDEN);
     }
+
 }

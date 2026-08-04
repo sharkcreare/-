@@ -32,6 +32,8 @@ public class KnowledgeItemController {
     knowledgeItemservice.delete(id);
     return Result.ok();
     }
+    @Operation(summary = "分页查询知识库")
+    @GetMapping
     public Result<Page<KnowledgeItemVO>>list(
             @RequestParam(defaultValue = "1")Integer pageNum,
             @RequestParam(defaultValue = "10")Integer pageSize,
@@ -40,6 +42,19 @@ public class KnowledgeItemController {
             @RequestParam(required = false)String keyword){
                 return Result.ok(knowledgeItemservice.getPage(pageNum,pageSize,contentType,tagId,keyword));
     }
+    @Operation(summary = "查看笔记")
+    @GetMapping("/{id}")
+    public Result <KnowledgeItemVO> detail(@PathVariable Long id){
+    return Result.ok(knowledgeItemservice.getDetail(id));
+    }
 
+
+    @Operation(summary = "置顶或取消")
+    @PutMapping("/{id}/top")
+    public Result<Void> toggleTop(@PathVariable Long id ,@RequestParam boolean isTop)
+    {
+        knowledgeItemservice.toggleTop(id,isTop);
+        return Result.ok();
+    }
 
 }

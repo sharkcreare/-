@@ -9,6 +9,7 @@ import com.pzx.knowledge.dto.KnowledgeItemDTO;
 import com.pzx.knowledge.entity.ItemTag;
 import com.pzx.knowledge.entity.KnowledgeItem;
 import com.pzx.knowledge.entity.Tag;
+import com.pzx.knowledge.mapper.FavoriteMapper;
 import com.pzx.knowledge.mapper.ItemTagMapper;
 import com.pzx.knowledge.mapper.KnowledgeItemMapper;
 import com.pzx.knowledge.mapper.TagMapper;
@@ -22,7 +23,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
+import com.pzx.knowledge.entity.Favorite;
+import com.pzx.knowledge.mapper.FavoriteMapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,14 +36,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class KnowledgeItemServiceImpl
         extends ServiceImpl<KnowledgeItemMapper, KnowledgeItem> implements KnowledgeItemService {
-
+    private final FavoriteMapper favoriteMapper;
     private final TagMapper tagMapper;
     private final ItemTagMapper itemTagMapper;
 
     @Override
     @Transactional
     public KnowledgeItemVO create(KnowledgeItemDTO dto) {
-        Long userId = UserContext.getUser();
+         Long userId = UserContext.getUser();
+//        检验标签
+        validateTags(dto.getTagIds(), userId);
 
          KnowledgeItem  item= new KnowledgeItem();
          item.setUserId(userId);
@@ -50,6 +54,11 @@ public class KnowledgeItemServiceImpl
          item.setSummary(dto.getSummary()!=null ? dto.getSummary() : "");
          item.setIsTop(dto.getIsTop() !=null&& dto.getIsTop() ? 1: 0  );
          this.save(item);
+
+         saveItemTags(item.getId(),dto.getTagIds());
+
+         KnowledgeItemVO vo = toVo(item);
+         fillSingleTags(vo);
         return toVo(item);
     }
 
@@ -64,6 +73,8 @@ public class KnowledgeItemServiceImpl
         if(item ==null || !item.getUserId().equals(userId)){
             throw  new BusinessException(ResultCode.ITEM_NOT_FOUND);
         }
+        validateTags(dto.getTagIds(), userId);
+
         item.setTitle(dto.getTitle());
         item.setContent(dto.getContent());
         item.setContentType(dto.getContentType());
@@ -71,7 +82,16 @@ public class KnowledgeItemServiceImpl
         item.setSourceUrl(dto.getSourceUrl()!=null ? dto.getSourceUrl():"");
         item.setIsTop(dto.getIsTop() !=null && dto.getIsTop() ?1:0);
         this.updateById(item);
-        return toVo(item);
+
+        // 先删旧关联，再插新关联
+        itemTagMapper.delete(new LambdaQueryWrapper<ItemTag>()
+                .eq(ItemTag::getTagId,itemId));
+            saveItemTags(itemId,dto.getTagIds());
+
+            KnowledgeItemVO vo=toVo(item);
+
+        fillSingleTags(vo);
+        return vo;
     }
 
     @Override
@@ -86,9 +106,10 @@ public class KnowledgeItemServiceImpl
         {
             throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
         }
-        LambdaQueryWrapper<ItemTag> wrapper= new LambdaQueryWrapper<>();
-        wrapper.eq(ItemTag::getItemId,id);
-        itemTagMapper.delete(wrapper);
+        itemTagMapper.delete(new LambdaQueryWrapper<ItemTag>()
+                .eq(ItemTag::getItemId,id));
+        favoriteMapper.delete(new LambdaQueryWrapper<Favorite>()
+                .eq(Favorite::getItemId,id));
 
         this.removeById(id);
     }
@@ -132,21 +153,33 @@ public class KnowledgeItemServiceImpl
                 .map(this::toVo).collect(Collectors.toList());
 
         batchFillTags(voList);
+
         Page<KnowledgeItemVO> vopage =new Page<>(pageNum,pageSize);
         vopage.setTotal(result.getTotal());
         vopage.setRecords(voList);
-        vopage.setPages(result.getPages());
         return vopage;
     }
 
     @Override
     public KnowledgeItemVO getDetail(Long id) {
-        return null;
+        Long userId = UserContext.getUser();
+        KnowledgeItem item = this.getById(id);
+        if (item == null || !item.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
+        }
+        KnowledgeItemVO vo = toVo(item);
+        fillSingleTags(vo);
+        return vo;
     }
-
     @Override
     public void toggleTop(Long id, Boolean isTop) {
-
+            Long userId =UserContext.getUser();
+            KnowledgeItem item =this.getById(id);
+        if (item == null || !item.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
+        }
+        item.setIsTop(isTop !=null&& isTop?1:0);
+        this.updateById(item);
     }
 
 
@@ -160,12 +193,71 @@ public class KnowledgeItemServiceImpl
 
         vo.setIsFavorite(item.getIsFavorite() != null && item.getIsFavorite() == 1);
 
-        vo.setIsTop(item.getIsTop() == 1);
+        vo.setIsTop(item.getIsTop() != null && item.getIsTop() == 1);
 
      return vo;
     }
 
 
+//    保存【笔记 - 标签关联关系】
+    private void saveItemTags(Long itemId, List<Long> tagIds) {
+        // 没有标签，直接返回
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+        // 循环每个标签ID，向中间表 item_tag 插入记录
+        for (Long tagId : tagIds) {
+            ItemTag it = new ItemTag();
+            it.setItemId(itemId); //笔记id
+            it.setTagId(tagId);   //标签id
+            itemTagMapper.insert(it);
+        }
+    }
+
+//    validateTags 校验标签
+    private void validateTags(List<Long> tagIds, Long userId) {
+        // 如果前端没传标签，直接放行，不用校验
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+        // 根据传入的标签id集合，批量查询标签
+        List<Tag> tags = tagMapper.selectByIds(tagIds);
+
+        // 两个条件：
+        // ① 查询出来标签数量 = 前端传来id数量 → 不存在无效id（有id在数据库找不到）
+        // ② 所有标签的创建人 == 当前登录用户userId
+        boolean allOwned = tags.size() == tagIds.size()
+                && tags.stream().allMatch(t -> t.getUserId().equals(userId));
+
+        // 只要不满足上面条件：标签不存在 / 使用了别人的标签 → 报错
+        if (!allOwned) {
+            throw new BusinessException(ResultCode.TAG_NOT_FOUND);
+        }
+    }
+
+//    查询填充标签名称（VO 组装）
+    private void fillSingleTags(KnowledgeItemVO vo) {
+        // 根据笔记id 查询中间表item_tag所有关联记录
+        List<ItemTag> mappings = itemTagMapper.selectList(
+                new LambdaQueryWrapper<ItemTag>().eq(ItemTag::getItemId, vo.getId()));
+
+        // 如果这条笔记没有绑定任何标签，前端tags设置空集合
+        if (mappings.isEmpty()) {
+            vo.setTags(Collections.emptyList());
+            return;
+        }
+
+        // 提取所有标签id
+        List<Long> tagIds = mappings.stream().map(ItemTag::getTagId).toList();
+        // 批量查询标签，构建 map<标签id,标签名称>
+        Map<Long, String> tagMap = tagMapper.selectBatchIds(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getId, Tag::getName));
+
+        // 根据中间表的tagId，取出标签名字，组装 List<String> 标签名集合
+        vo.setTags(mappings.stream()
+                .map(m -> tagMap.get(m.getTagId()))
+                .collect(Collectors.toList()));
+    }
     private void batchFillTags (List<KnowledgeItemVO> voList){
         if(voList.isEmpty()){
             return;

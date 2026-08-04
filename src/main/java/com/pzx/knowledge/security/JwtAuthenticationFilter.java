@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // token异常：过期、篡改、解析失败，返回标准401 JSON
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":401,\"msg\":\"token无效或已过期\",\"data\":null}");
+            response.getWriter().write("{\"code\":401,\"message\":\"token无效或已过期\",\"data\":null}");
             return;
         } finally {
             // 自定义ThreadLocal每次请求一定清理，防止线程池复用用户串号
