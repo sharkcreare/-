@@ -1,6 +1,7 @@
 spring:
   application:
     name: knowledge-system
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/knowledge_system?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
@@ -10,11 +11,17 @@ spring:
     redis:
       host: localhost
       port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  elasticsearch:
+    uris: http://localhost:9200
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
@@ -24,7 +31,22 @@ mybatis-plus:
 
 server:
   port: 8080
-# jwt配置
+
 jwt:
-  secret: your-256-bit-secret-key-here-make-it-longpleasewritealongstring
-  expiration: 86400000   # 24小时 毫秒，和原来 1000*60*60*24 一致
+  secret: your-256-bit-secret-key-here-make-it-long
+  expiration: 86400000
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: knowledge
+
+xxl:
+  job:
+    admin:
+      addresses: http://localhost:8088/xxl-job-admin
+    accessToken: knowledge-token
+    executor:
+      appname: knowledge-system
+      port: 9999

@@ -45,7 +45,8 @@ public class KnowledgeItemServiceImpl
     public KnowledgeItemVO create(KnowledgeItemDTO dto) {
          Long userId = UserContext.getUser();
 //        检验标签
-        validateTags(dto.getTagIds(), userId);
+        List<Long> distinctTagIds = getDistinctTagIds(dto.getTagIds());
+        validateTags(distinctTagIds, userId);
 
          KnowledgeItem  item= new KnowledgeItem();
          item.setUserId(userId);
@@ -55,11 +56,11 @@ public class KnowledgeItemServiceImpl
          item.setIsTop(dto.getIsTop() !=null&& dto.getIsTop() ? 1: 0  );
          this.save(item);
 
-         saveItemTags(item.getId(),dto.getTagIds());
+        saveItemTags(item.getId(), distinctTagIds);
 
          KnowledgeItemVO vo = toVo(item);
          fillSingleTags(vo);
-        return toVo(item);
+        return vo;
     }
 
 
@@ -73,7 +74,8 @@ public class KnowledgeItemServiceImpl
         if(item ==null || !item.getUserId().equals(userId)){
             throw  new BusinessException(ResultCode.ITEM_NOT_FOUND);
         }
-        validateTags(dto.getTagIds(), userId);
+        List<Long> distinctTagIds = getDistinctTagIds(dto.getTagIds());
+        validateTags( distinctTagIds, userId);
 
         item.setTitle(dto.getTitle());
         item.setContent(dto.getContent());
@@ -85,7 +87,7 @@ public class KnowledgeItemServiceImpl
 
         // 先删旧关联，再插新关联
         itemTagMapper.delete(new LambdaQueryWrapper<ItemTag>()
-                .eq(ItemTag::getTagId,itemId));
+                .eq(ItemTag::getItemId,itemId));
             saveItemTags(itemId,dto.getTagIds());
 
             KnowledgeItemVO vo=toVo(item);
@@ -109,7 +111,9 @@ public class KnowledgeItemServiceImpl
         itemTagMapper.delete(new LambdaQueryWrapper<ItemTag>()
                 .eq(ItemTag::getItemId,id));
         favoriteMapper.delete(new LambdaQueryWrapper<Favorite>()
-                .eq(Favorite::getItemId,id));
+                .eq(Favorite::getItemId,id)
+                .eq(Favorite::getUserId,userId));
+
 
         this.removeById(id);
     }
@@ -156,6 +160,9 @@ public class KnowledgeItemServiceImpl
 
         Page<KnowledgeItemVO> vopage =new Page<>(pageNum,pageSize);
         vopage.setTotal(result.getTotal());
+        vopage.setPages(result.getPages());
+        vopage.setCurrent(result.getCurrent());
+        vopage.setSize(result.getSize());
         vopage.setRecords(voList);
         return vopage;
     }
@@ -167,10 +174,20 @@ public class KnowledgeItemServiceImpl
         if (item == null || !item.getUserId().equals(userId)) {
             throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
         }
+        baseMapper.incrementViewCount(id);
+        boolean isFavorite = favoriteMapper.exists(new LambdaQueryWrapper<Favorite>()
+                .eq(Favorite::getItemId, id)
+                .eq(Favorite::getUserId, userId));
+
         KnowledgeItemVO vo = toVo(item);
+        vo.setViewCount(item.getViewCount() + 1); // 返回给前端的是+1后的值
+        vo.setIsFavorite(isFavorite);
         fillSingleTags(vo);
         return vo;
+
     }
+
+
     @Override
     public void toggleTop(Long id, Boolean isTop) {
             Long userId =UserContext.getUser();
@@ -197,8 +214,13 @@ public class KnowledgeItemServiceImpl
 
      return vo;
     }
-
-
+//    去重和过滤null
+    private List<Long> getDistinctTagIds(List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return tagIds.stream().distinct().filter(java.util.Objects::nonNull).toList();
+    }
 //    保存【笔记 - 标签关联关系】
     private void saveItemTags(Long itemId, List<Long> tagIds) {
         // 没有标签，直接返回
