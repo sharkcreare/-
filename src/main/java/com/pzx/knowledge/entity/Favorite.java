@@ -8,10 +8,12 @@ import java.time.LocalDateTime;
 @TableName("favorite")
 public class Favorite {
     @TableId(type = IdType.AUTO)
-    private Long id;
-    private Long userId;
-    private Long itemId;
+    private Long id;                // 主键ID
+
+    private Long userId;            // 用户ID
+
+    private Long itemId;            // 笔记ID
 
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 创建时间
 }

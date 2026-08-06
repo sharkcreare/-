@@ -13,10 +13,12 @@ import java.time.LocalDateTime;
 @TableName("knowledge_item_tag")
 public class ItemTag {
     @TableId(type = IdType.AUTO)
-    private Long id;
-    private Long itemId;
-    private Long tagId;
+    private Long id;                // 主键ID
+
+    private Long itemId;            // 笔记ID
+
+    private Long tagId;             // 标签ID
 
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 创建时间
 }
