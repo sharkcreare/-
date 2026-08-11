@@ -31,14 +31,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
 
     @Override
-    public UserVO register(RegisterDTO dto) {
+    public LoginResultVO register(RegisterDTO dto) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, dto.getUsername());
         if (this.count(wrapper) > 0) {
             log.warn("register failed - username exists: {}", dto.getUsername());
             throw new BusinessException(ResultCode.USERNAME_EXISTS);
         }
-
         User user = new User();
         // 先把明文密码存下来再拷贝，避免 BeanUtils 拷贝password后被删除encode行导致明文入库
         String rawPassword =dto.getPassword();
@@ -46,7 +45,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         BeanUtils.copyProperties(dto, user);
         user.setPassword(passwordEncoder.encode(rawPassword));
         this.save(user);
-        return toVO(user);
+
+        String token =jwtUtils.generateToken(user.getId(),user.getUsername());
+        LoginResultVO result= new LoginResultVO();
+        result.setToken(token);
+        result.setUserInfo(toVO(user));
+        return result;
+
     }
 
     @Override
@@ -71,7 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         LoginResultVO result = new LoginResultVO();
         result.setToken(token);
-        result.setUser(toVO(user));
+        result.setUserInfo(toVO(user));
         return result;
     }
 

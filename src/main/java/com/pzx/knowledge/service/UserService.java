@@ -6,7 +6,7 @@ import com.pzx.knowledge.entity.User;
 import com.pzx.knowledge.vo.LoginResultVO;
 import com.pzx.knowledge.vo.UserVO;
 public interface UserService extends IService<User> {
-    UserVO register(RegisterDTO dto);
+    LoginResultVO register(RegisterDTO dto);
     LoginResultVO login(LoginDTO dto);
     UserVO getCurrentUser(Long userId);
 }

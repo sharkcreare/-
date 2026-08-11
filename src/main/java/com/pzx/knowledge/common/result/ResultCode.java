@@ -12,6 +12,7 @@ public enum ResultCode {
     FORBIDDEN(403, "无权限访问"),
     NOT_FOUND(404, "资源不存在"),
     INTERNAL_ERROR(500, "服务器内部错误"),
+    SERVER_BUSY(503, "服务器繁忙，请稍后重试"),
 
     // 业务错误码
     USERNAME_EXISTS(1001, "用户名已存在"),
@@ -21,7 +22,10 @@ public enum ResultCode {
     USER_DISABLED(1005, "用户已被禁用"),
     ITEM_NOT_FOUND(2001, "知识条目不存在"),
     TAG_EXISTS(3001, "标签已存在"),
-    TAG_NOT_FOUND(3002, "标签不存在");
+    TAG_NOT_FOUND(3002, "标签不存在"),
+    FILE_TOO_LARGE(4001, "文件大小超过限制"),
+    FILE_UPLOAD_FAILED(4002, "文件上传失败"),
+    FILE_NOT_FOUND(4003, "文件不存在");
 
     private final int code;
     private final String message;

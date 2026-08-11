@@ -23,7 +23,7 @@ public class JwtUtils {
         @Value("${jwt.secret}")
         private String secret;
 
-        @Value("${jwt.expire:86400000}")
+    @Value("${jwt.expiration:86400000}")
         private long expiration;
 
         private SecretKey getKey() {
@@ -31,7 +31,7 @@ public class JwtUtils {
         }
 
 
-//            生成jwptoken
+//            生成jwp token
     public String generateToken (Long userId,String username){
 
         Date now =new Date();
@@ -85,14 +85,6 @@ public class JwtUtils {
         }
         return claims.get("userId",Long.class);
     }
-//
-// 获取用户名
 
-        public String getUsername(String token) {
-            Claims claims = getClaims(token);
-            if (claims == null) {
-                return null;
-            }
-            return claims.getSubject();
-        }
+
 }

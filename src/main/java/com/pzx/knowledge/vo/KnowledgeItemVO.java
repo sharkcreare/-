@@ -15,7 +15,7 @@ public class KnowledgeItemVO {
     private Boolean isFavorite;     // 是否已收藏
     private Boolean isTop;          // 是否置顶
     private Integer viewCount;      // 浏览次数
-    private List<String> tags;      // 标签名称列表
+    private List<TagVO> tags;        // 标签名称列表
     private LocalDateTime createdAt; // 创建时间
     private LocalDateTime updatedAt; // 更新时间
 }

@@ -18,6 +18,7 @@ import com.pzx.knowledge.service.KnowledgeItemService;
 import com.pzx.knowledge.utils.UserContext;
 import com.pzx.knowledge.vo.KnowledgeItemVO;
 
+import com.pzx.knowledge.vo.TagVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -88,7 +89,7 @@ public class KnowledgeItemServiceImpl
         // 先删旧关联，再插新关联
         itemTagMapper.delete(new LambdaQueryWrapper<ItemTag>()
                 .eq(ItemTag::getItemId,itemId));
-            saveItemTags(itemId,dto.getTagIds());
+            saveItemTags(itemId,distinctTagIds);
 
             KnowledgeItemVO vo=toVo(item);
 
@@ -180,7 +181,7 @@ public class KnowledgeItemServiceImpl
                 .eq(Favorite::getUserId, userId));
 
         KnowledgeItemVO vo = toVo(item);
-        vo.setViewCount(item.getViewCount() + 1); // 返回给前端的是+1后的值
+       vo.setViewCount(this.getById(id).getViewCount()); // 返回给前端的是+1后的值
         vo.setIsFavorite(isFavorite);
         fillSingleTags(vo);
         return vo;
@@ -272,13 +273,21 @@ public class KnowledgeItemServiceImpl
         // 提取所有标签id
         List<Long> tagIds = mappings.stream().map(ItemTag::getTagId).toList();
         // 批量查询标签，构建 map<标签id,标签名称>
-        Map<Long, String> tagMap = tagMapper.selectBatchIds(tagIds).stream()
-                .collect(Collectors.toMap(Tag::getId, Tag::getName));
+        Map<Long, Tag> tagMap = tagMapper.selectBatchIds(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getId,t->t));
 
         // 根据中间表的tagId，取出标签名字，组装 List<String> 标签名集合
         vo.setTags(mappings.stream()
-                .map(m -> tagMap.get(m.getTagId()))
+                .map(m -> toTagVO(tagMap.get(m.getTagId())))
                 .collect(Collectors.toList()));
+    }
+    private TagVO toTagVO(Tag tag) {
+        if (tag == null) return null;
+        TagVO vo = new TagVO();
+        vo.setId(tag.getId());
+        vo.setName(tag.getName());
+        vo.setColor(tag.getColor());
+        return vo;
     }
     private void batchFillTags (List<KnowledgeItemVO> voList){
         if(voList.isEmpty()){
@@ -301,16 +310,15 @@ public class KnowledgeItemServiceImpl
             return;
         }
 
-        Map<Long,String>tagMap=tagMapper.selectList(
+        Map<Long,Tag>tagMap=tagMapper.selectList(
                 new LambdaQueryWrapper<Tag>().in(Tag::getId, allTagIds)
-        ).stream().collect(Collectors.toMap(Tag::getId,Tag::getName));
+        ).stream().collect(Collectors.toMap(Tag::getId,t->t));
 
-        Map<Long,List<String>>grouped =allMappings.stream()
+        Map<Long,List<TagVO>>grouped =allMappings.stream()
                 .collect(Collectors.groupingBy(ItemTag::getItemId,Collectors.mapping(
-                     m->tagMap.get(m.getTagId()),Collectors.toList())
-                ));
+                     m->toTagVO(tagMap.get(m.getTagId())),Collectors.toList())));
 
-        voList.forEach(vo-> vo.setTags(grouped.getOrDefault(vo.getId(),Collections.emptyList())));
+        voList.forEach(vo -> vo.setTags(grouped.getOrDefault(vo.getId(), Collections.emptyList())));
 
     }
 }

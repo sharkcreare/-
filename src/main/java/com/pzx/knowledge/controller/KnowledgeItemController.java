@@ -16,22 +16,34 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/items")
 public class KnowledgeItemController {
     private final KnowledgeItemService knowledgeItemservice;
-@Operation(summary = "新增知识库笔记")
+
+
+
+    @Operation(summary = "新增知识库笔记")
     @PostMapping
     public Result<KnowledgeItemVO>create(@Valid @RequestBody KnowledgeItemDTO dto){
         return Result.ok(knowledgeItemservice.create(dto));
     }
+
+
+
     @Operation(summary = "修改笔记")
-    @PutMapping("/{Id}")
-    public  Result<KnowledgeItemVO> update (@PathVariable Long Id ,@Valid @RequestBody KnowledgeItemDTO dto){
-    return Result.ok(knowledgeItemservice.update(Id,dto));
+    @PutMapping("/{id}")
+    public  Result<KnowledgeItemVO> update (@PathVariable Long id ,@Valid @RequestBody KnowledgeItemDTO dto){
+        return Result.ok(knowledgeItemservice.update(id,dto));
     }
+
+
+
     @DeleteMapping("/{id}")
     @Operation(summary = "删除笔记")
     public Result <Void> delete (@PathVariable Long id){
-    knowledgeItemservice.delete(id);
-    return Result.ok();
+        knowledgeItemservice.delete(id);
+        return Result.ok();
     }
+
+
+
     @Operation(summary = "分页查询知识库")
     @GetMapping
     public Result<Page<KnowledgeItemVO>>list(
@@ -40,13 +52,18 @@ public class KnowledgeItemController {
             @RequestParam(required = false)String contentType,
             @RequestParam(required  = false)Long tagId,
             @RequestParam(required = false)String keyword){
-                return Result.ok(knowledgeItemservice.getPage(pageNum,pageSize,contentType,tagId,keyword));
+        return Result.ok(knowledgeItemservice.getPage(pageNum,pageSize,contentType,tagId,keyword));
     }
+
+
+
     @Operation(summary = "查看笔记")
     @GetMapping("/{id}")
     public Result <KnowledgeItemVO> detail(@PathVariable Long id){
-    return Result.ok(knowledgeItemservice.getDetail(id));
+        return Result.ok(knowledgeItemservice.getDetail(id));
     }
+
+
 
 
     @Operation(summary = "置顶或取消")

@@ -26,7 +26,7 @@ public class AuthController {
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
-    public Result<UserVO> register(@Valid @RequestBody RegisterDTO dto) {
+    public Result<LoginResultVO> register(@Valid @RequestBody RegisterDTO dto) {
         return Result.ok(userService.register(dto));
     }
 
