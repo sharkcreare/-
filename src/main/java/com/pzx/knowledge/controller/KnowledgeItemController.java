@@ -1,6 +1,7 @@
 package com.pzx.knowledge.controller;
 import com.pzx.knowledge.common.result.Result;
 import com.pzx.knowledge.dto.KnowledgeItemDTO;
+import com.pzx.knowledge.dto.KnowledgeSearchDTO;
 import com.pzx.knowledge.service.KnowledgeItemService;
 import com.pzx.knowledge.vo.KnowledgeItemVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,13 +47,8 @@ public class KnowledgeItemController {
 
     @Operation(summary = "分页查询知识库")
     @GetMapping
-    public Result<Page<KnowledgeItemVO>>list(
-            @RequestParam(defaultValue = "1")Integer pageNum,
-            @RequestParam(defaultValue = "10")Integer pageSize,
-            @RequestParam(required = false)String contentType,
-            @RequestParam(required  = false)Long tagId,
-            @RequestParam(required = false)String keyword){
-        return Result.ok(knowledgeItemservice.getPage(pageNum,pageSize,contentType,tagId,keyword));
+    public Result<Page<KnowledgeItemVO>>list(@Valid KnowledgeSearchDTO dto){
+        return Result.ok(knowledgeItemservice.getPage(dto));
     }
 
 

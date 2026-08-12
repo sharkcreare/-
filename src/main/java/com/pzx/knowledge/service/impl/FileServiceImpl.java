@@ -41,17 +41,7 @@ public class FileServiceImpl implements FileService {
             throw new BusinessException(ResultCode.FILE_TOO_LARGE);
         }
         try{
-            String bucket=minioConfig.getBucket();
-            boolean exists = minioClient.bucketExists(BucketExistsArgs
-                    .builder()
-                    .bucket(bucket)
-                    .build());
-            if(!exists){
-                minioClient.makeBucket(MakeBucketArgs
-                        .builder()
-                        .bucket(bucket)
-                        .build());
-            }
+            String bucket = minioConfig.getBucket();
             String originalName = file.getOriginalFilename();
             String suffix ="";
             if(originalName != null &&  originalName.contains(".")){
@@ -69,7 +59,7 @@ public class FileServiceImpl implements FileService {
                             .build());
             log.info("文件上传成功: {} -> {}", originalName, objectName);
 
-            String url = getPresignedUrl(objectName);
+            String url = getPresignedUrl(objectName).getUrl();
             FileUploadVO vo = new FileUploadVO();
             vo.setObjectName(objectName);
             vo.setUrl(url);
@@ -83,7 +73,11 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public InputStream download(String objectName) {
+        Long userId = UserContext.getUser();
         try{
+            if (objectName == null || !objectName.startsWith("u" + userId + "/")) {
+                throw new BusinessException(ResultCode.FILE_NOT_FOUND);
+            }
             InputStream inputStream = minioClient.getObject(
                     GetObjectArgs
                             .builder()
@@ -101,6 +95,9 @@ public class FileServiceImpl implements FileService {
     @Override
     public void delete(String objectName) {
         Long userId = UserContext.getUser();
+        if(userId == null){
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
             if (objectName == null || !objectName.startsWith("u" + userId + "/")) {
                 throw new BusinessException(ResultCode.FILE_NOT_FOUND);
             }
@@ -114,6 +111,7 @@ public class FileServiceImpl implements FileService {
             log.info("文件删除成功：{}"  , objectName);
         }catch (Exception e) {
            log.error("文件删除失败：{}", objectName, e);
+            throw new BusinessException(ResultCode.FILE_DELETE_FAILED);
         }
 
     }
@@ -144,7 +142,7 @@ public class FileServiceImpl implements FileService {
             return vo;
         }catch (Exception e) {
             log.error("获取预签名URL失败：{}", objectName, e);
-            throw new BusinessException(ResultCode.FILE_UPLOAD_FAILED);
+            throw new BusinessException(ResultCode.FILE_NOT_FOUND);
         }
     }
 }

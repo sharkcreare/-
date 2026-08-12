@@ -25,7 +25,8 @@ public enum ResultCode {
     TAG_NOT_FOUND(3002, "标签不存在"),
     FILE_TOO_LARGE(4001, "文件大小超过限制"),
     FILE_UPLOAD_FAILED(4002, "文件上传失败"),
-    FILE_NOT_FOUND(4003, "文件不存在");
+    FILE_NOT_FOUND(4003, "文件不存在"),
+    FILE_DELETE_FAILED(4004,"文件删除失败");
 
     private final int code;
     private final String message;

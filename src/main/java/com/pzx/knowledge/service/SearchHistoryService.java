@@ -5,9 +5,9 @@ import java.util.List;
 
 public interface SearchHistoryService {
 
-    void saveKeyword(Long userId, String keyword);
+    void saveKeyword(String keyword);
 
-    List<SearchHistoryVO> listRecent(Long userId, int limit);
+    List<SearchHistoryVO> listRecent( int limit);
 
-    void clearAll(Long userId);
+    void clearAll();
 }

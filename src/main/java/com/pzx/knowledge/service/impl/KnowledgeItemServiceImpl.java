@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.pzx.knowledge.common.exception.BusinessException;
 import com.pzx.knowledge.common.result.ResultCode;
 import com.pzx.knowledge.dto.KnowledgeItemDTO;
+import com.pzx.knowledge.dto.KnowledgeSearchDTO;
 import com.pzx.knowledge.entity.ItemTag;
 import com.pzx.knowledge.entity.KnowledgeItem;
 import com.pzx.knowledge.entity.Tag;
@@ -120,7 +121,12 @@ public class KnowledgeItemServiceImpl
     }
 
     @Override
-    public Page<KnowledgeItemVO> getPage(Integer pageNum, Integer pageSize, String contentType, Long tagId, String keyword) {
+    public Page<KnowledgeItemVO> getPage(KnowledgeSearchDTO dto) {
+        Integer pageNum = dto.getPageNum();
+        Integer pageSize = dto.getPageSize();
+        String contentType = dto.getContentType();
+        Long tagId = dto.getTagId();
+        String keyword = dto.getKeyword();
         Long userId =UserContext.getUser();
         LambdaQueryWrapper<KnowledgeItem> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(KnowledgeItem::getUserId,userId);
@@ -189,6 +195,8 @@ public class KnowledgeItemServiceImpl
     }
 
 
+
+
     @Override
     public void toggleTop(Long id, Boolean isTop) {
             Long userId =UserContext.getUser();
@@ -201,7 +209,17 @@ public class KnowledgeItemServiceImpl
     }
 
 
-
+    @Override
+    public List<KnowledgeItemVO> listByIdsForUser(List<Long> ids) {
+        Long userId = UserContext.getUser();
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return this.listByIds(ids).stream()
+                .filter(item -> item.getUserId().equals(userId))   // 防越权
+                .map(this::toVo)
+                .collect(Collectors.toList());
+    }
 
     //私有方法：将数据转成VO
     private KnowledgeItemVO toVo (KnowledgeItem item){

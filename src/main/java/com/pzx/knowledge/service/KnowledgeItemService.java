@@ -3,8 +3,11 @@ package com.pzx.knowledge.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.pzx.knowledge.dto.KnowledgeItemDTO;
+import com.pzx.knowledge.dto.KnowledgeSearchDTO;
 import com.pzx.knowledge.entity.KnowledgeItem;
 import com.pzx.knowledge.vo.KnowledgeItemVO;
+
+import java.util.List;
 
 public interface KnowledgeItemService extends IService<KnowledgeItem> {
 
@@ -14,10 +17,11 @@ public interface KnowledgeItemService extends IService<KnowledgeItem> {
 
     void delete(Long id);
 
-    Page<KnowledgeItemVO> getPage(Integer pageNum, Integer pageSize,
-                                  String contentType, Long tagId, String keyword);
+    Page<KnowledgeItemVO> getPage(KnowledgeSearchDTO dto);
 
     KnowledgeItemVO getDetail(Long id);
+
+    List<KnowledgeItemVO> listByIdsForUser(List<Long> ids);
 
     void toggleTop(Long id, Boolean isTop);
 }

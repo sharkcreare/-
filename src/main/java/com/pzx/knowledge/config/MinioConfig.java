@@ -1,6 +1,9 @@
 package com.pzx.knowledge.config;
 
+import io.minio.BucketExistsArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +17,10 @@ public class MinioConfig {
     private String accessKey = "minioadmin";
     private String secretKey = "minioadmin";
     private String bucket = "knowledge";
+
+
+
+
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
@@ -21,4 +28,7 @@ public class MinioConfig {
                 .credentials(accessKey, secretKey)
                 .build();
     }
+
+
+
 }

@@ -1,11 +1,10 @@
 package com.pzx.knowledge.controller;
 
 import com.pzx.knowledge.annotation.OperationLog;
-import com.pzx.knowledge.common.exception.BusinessException;
 import com.pzx.knowledge.common.result.Result;
-import com.pzx.knowledge.common.result.ResultCode;
+
 import com.pzx.knowledge.service.FileService;
-import com.pzx.knowledge.utils.UserContext;
+
 import com.pzx.knowledge.vo.FileUploadVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,12 +24,7 @@ public class FileController {
     @Operation(summary = "上传文件到minio")
     @PostMapping("/upload")
     public Result<FileUploadVO> upload(@RequestParam("file") MultipartFile file) {
-
-        String objectName =fileService.upload(file);
-        FileUploadVO vo = new FileUploadVO();
-        vo.setObjectName(objectName);
-        vo.setUrl(fileService.getPresignedUrl(objectName));
-        return Result.ok(vo);
+        return Result.ok(fileService.upload(file));
     }
     @Operation(summary ="删除文件")
     @DeleteMapping
