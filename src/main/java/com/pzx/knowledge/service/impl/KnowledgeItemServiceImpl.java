@@ -10,6 +10,7 @@ import com.pzx.knowledge.dto.KnowledgeSearchDTO;
 import com.pzx.knowledge.entity.ItemTag;
 import com.pzx.knowledge.entity.KnowledgeItem;
 import com.pzx.knowledge.entity.Tag;
+import com.pzx.knowledge.lock.LockUtil;
 import com.pzx.knowledge.mapper.FavoriteMapper;
 import com.pzx.knowledge.mapper.ItemTagMapper;
 import com.pzx.knowledge.mapper.KnowledgeItemMapper;
@@ -26,10 +27,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import com.pzx.knowledge.entity.Favorite;
-import com.pzx.knowledge.mapper.FavoriteMapper;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -41,6 +43,7 @@ public class KnowledgeItemServiceImpl
     private final FavoriteMapper favoriteMapper;
     private final TagMapper tagMapper;
     private final ItemTagMapper itemTagMapper;
+    private final LockUtil lockUtil;
 
     @Override
     @Transactional
@@ -200,12 +203,15 @@ public class KnowledgeItemServiceImpl
     @Override
     public void toggleTop(Long id, Boolean isTop) {
             Long userId =UserContext.getUser();
-            KnowledgeItem item =this.getById(id);
-        if (item == null || !item.getUserId().equals(userId)) {
-            throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
-        }
-        item.setIsTop(isTop !=null&& isTop?1:0);
-        this.updateById(item);
+            lockUtil.executeWithLock("lock:item:top"+id,3,10, TimeUnit.SECONDS,()->{
+                KnowledgeItem item =this.getById(id);
+                if (item == null || !item.getUserId().equals(userId)) {
+                    throw new BusinessException(ResultCode.ITEM_NOT_FOUND);
+                }
+                item.setIsTop(isTop !=null&& isTop?1:0);
+                this.updateById(item);
+            });
+
     }
 
 
