@@ -2,6 +2,10 @@ spring:
   application:
     name: knowledge-system
 
+  servlet:
+    multipart:
+      max-file-size: 50MB      # 单文件上限
+      max-request-size: 100MB  # 整个请求上限
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://192.168.150.101:3306/knowledge_system?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai

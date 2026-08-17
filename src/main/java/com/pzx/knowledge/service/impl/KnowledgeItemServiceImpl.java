@@ -15,6 +15,8 @@ import com.pzx.knowledge.mapper.FavoriteMapper;
 import com.pzx.knowledge.mapper.ItemTagMapper;
 import com.pzx.knowledge.mapper.KnowledgeItemMapper;
 import com.pzx.knowledge.mapper.TagMapper;
+import com.pzx.knowledge.mq.KnowledgeSyncMessage;
+import com.pzx.knowledge.mq.KnowledgeSyncProducer;
 import com.pzx.knowledge.service.KnowledgeItemService;
 
 import com.pzx.knowledge.utils.UserContext;
@@ -44,6 +46,7 @@ public class KnowledgeItemServiceImpl
     private final TagMapper tagMapper;
     private final ItemTagMapper itemTagMapper;
     private final LockUtil lockUtil;
+    private final KnowledgeSyncProducer knowledgeSyncProducer;
 
     @Override
     @Transactional
@@ -60,6 +63,7 @@ public class KnowledgeItemServiceImpl
          item.setSummary(dto.getSummary()!=null ? dto.getSummary() : "");
          item.setIsTop(dto.getIsTop() !=null&& dto.getIsTop() ? 1: 0  );
          this.save(item);
+         knowledgeSyncProducer.sendSyncMessage(new KnowledgeSyncMessage(item.getId(),"upsert",System.currentTimeMillis()));
 
         saveItemTags(item.getId(), distinctTagIds);
 
@@ -89,6 +93,7 @@ public class KnowledgeItemServiceImpl
         item.setSourceUrl(dto.getSourceUrl()!=null ? dto.getSourceUrl():"");
         item.setIsTop(dto.getIsTop() !=null && dto.getIsTop() ?1:0);
         this.updateById(item);
+        knowledgeSyncProducer.sendSyncMessage(new KnowledgeSyncMessage(itemId,"upsert",System.currentTimeMillis()));
 
         // 先删旧关联，再插新关联
         itemTagMapper.delete(new LambdaQueryWrapper<ItemTag>()
@@ -121,6 +126,7 @@ public class KnowledgeItemServiceImpl
 
 
         this.removeById(id);
+        knowledgeSyncProducer.sendSyncMessage(new KnowledgeSyncMessage(id,"delete",System.currentTimeMillis()));
     }
 
     @Override
