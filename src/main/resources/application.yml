@@ -19,8 +19,8 @@ spring:
   rabbitmq:
     host: 192.168.150.101
     port: 5672
-    username: guest
-    password: guest
+    username: tjxt
+    password: 123321
   elasticsearch:
     uris: http://192.168.150.101:9200
 
@@ -50,8 +50,8 @@ minio:
 xxl:
   job:
     admin:
-      addresses: http://localhost:8088/xxl-job-admin
-    accessToken: knowledge-token
+      addresses: http://192.168.150.101:8880/xxl-job-admin
+    accessToken: tianji
     executor:
       appname: knowledge-system
       port: 9999
