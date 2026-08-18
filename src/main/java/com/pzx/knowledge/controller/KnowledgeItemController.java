@@ -1,5 +1,8 @@
 package com.pzx.knowledge.controller;
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.pzx.knowledge.common.result.Result;
+import com.pzx.knowledge.common.result.ResultCode;
 import com.pzx.knowledge.dto.KnowledgeItemDTO;
 import com.pzx.knowledge.dto.KnowledgeSearchDTO;
 import com.pzx.knowledge.service.KnowledgeItemService;
@@ -11,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.bind.annotation.*;
 
+
 @Tag(name="CRUD 接口")
 @RequiredArgsConstructor
 @RestController
@@ -19,11 +23,14 @@ public class KnowledgeItemController {
     private final KnowledgeItemService knowledgeItemservice;
 
 
-
+    @SentinelResource(value = "knowledge_create",blockHandler = "createBlock")
     @Operation(summary = "新增知识库笔记")
     @PostMapping
     public Result<KnowledgeItemVO>create(@Valid @RequestBody KnowledgeItemDTO dto){
         return Result.ok(knowledgeItemservice.create(dto));
+    }
+    public Result<KnowledgeItemVO> createBlock(KnowledgeItemDTO dto, BlockException ex){
+        return Result.fail(ResultCode.SERVER_BUSY);
     }
 
 

@@ -7,6 +7,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,8 @@ import java.util.Date;
 @Slf4j
 @Component
 public class JwtUtils {
+    private static SecretKey STATIC_KEY;
+
 
         @Value("${jwt.secret}")
         private String secret;
@@ -86,5 +89,24 @@ public class JwtUtils {
         return claims.get("userId",Long.class);
     }
 
-
+    @PostConstruct
+    public void initStaticKey() {
+        STATIC_KEY = getKey();
+    }
+    public static Long getUserIdFromTokenQuietly(String token) {
+        if(!StringUtils.hasText(token)||STATIC_KEY==null){
+                return  null;
+        }
+        try {
+            return Jwts.parser()
+                    .verifyWith(STATIC_KEY)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getPayload()
+                    .get("userId", Long.class);
+        }catch (ExpiredJwtException e){
+            log.warn("token解析失败：{}",e.getMessage());
+            return null;
+        }
+    }
 }
